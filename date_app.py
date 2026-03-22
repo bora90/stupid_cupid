@@ -52,72 +52,102 @@ st.title("🏹 Stupid Cupid")
 st.subheader("모든 커플과 부부를 위한 AI 데이트 메이커")
 st.write("오늘 우리, 어떤 소중한 추억을 쌓아볼까요?")
 
-# 5. 입력 섹션
+# 5. 입력 섹션 (3가지 필터로 확장)
 st.divider()
-col1, col2 = st.columns(2)
-with col1:
-    mood = st.selectbox("🎭 지금 우리 기분은?", ["활동적인 게 좋아 🏃‍♀️", "조용히 쉬고 싶어 ☕", "맛있는 게 최고 🍕", "새로운 경험이 필요해 ✨"])
-with col2:
-    weather = st.selectbox("☁️ 오늘 날씨는?", ["맑음☀️", "비/눈🌧️", "흐림☁️", "적당함🌤️"])
+col1, col2, col3 = st.columns(3) # 3열로 확장
 
-# 6. AI 추천 함수 (프롬프트 수정)
-def get_ai_recommendation(mood, weather):
+with col1:
+    mood = st.selectbox("🎭 기분", ["활동적인 게 좋아 🏃‍♀️", "조용히 쉬고 싶어 ☕", "맛있는 게 최고 🍕", "새로운 경험이 필요해 ✨"])
+with col2:
+    weather = st.selectbox("☁️ 날씨", ["맑음☀️", "비/눈🌧️", "흐림☁️", "적당함🌤️"])
+with col3:
+    occasion = st.selectbox("📅 상황", ["보통날 🌿", "기념일 💎", "기분전환이 필요한 날 🌈", "중요한 고백/대화 💌"])
+
+# 6. AI 추천 함수 (Occasion 반영)
+def get_ai_recommendation(mood, weather, occasion):
     prompt = f"""
-    우리는 서로를 아끼는 커플 또는 부부야. 평범한 일상 속에서 특별한 설렘이 필요해.
-    오늘 우리의 기분은 '{mood}'이고, 날씨는 '{weather}'이야.
-    서울 내에서 갈 만한 감각적이고 사랑스러운 데이트 코스를 하나만 추천해줘.
+    우리는 커플 또는 부부야. 오늘 우리의 상황은 '{occasion}'이고, 기분은 '{mood}', 날씨는 '{weather}'이야.
+    이 3가지 조건을 모두 고려해서 서울 내 최고의 데이트 코스를 '매번 새롭게' 추천해줘.
     
-    답변은 반드시 아래 형식을 정확히 지켜줘 (텍스트만):
+    특히 '{occasion}'에 맞는 분위기를 최우선으로 고려해줘:
+    - 보통날: 편안하고 친밀감을 높일 수 있는 곳
+    - 기념일: 고급스럽고 사진이 잘 나오며 특별한 추억이 될 만한 곳
+    - 기분전환: 평소와는 완전히 다른 이색적인 분위기
+    
+    답변 형식:
     장소: [이름]
-    메뉴: [음식이나 음료]
-    꿀팁: [커플이나 부부의 사이를 더 가깝게 만들어줄 센스있는 조언 한 줄]
+    메뉴: [음식/음료]
+    꿀팁: [상황에 맞는 센스있는 조언 한 줄]
     """
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "system", "content": "너는 다정한 연애 및 부부 관계 컨설턴트야."},
+            messages=[{"role": "system", "content": "너는 전 세계 힙한 장소를 꿰뚫고 있는 프리미엄 데이트 컨설턴트야."},
                       {"role": "user", "content": prompt}],
-            temperature=0.7
+            temperature=0.9 # 창의성 유지
         )
         return response.choices[0].message.content
     except Exception as e:
         return f"에러 발생: {e}"
 
-# 7. 실행 로직
-if st.button("AI 큐피드 화살 쏘기! 🏹"):
-    if not os.getenv("OPENAI_API_KEY"):
-        st.error("API 키가 설정되지 않았습니다. .env 파일 또는 Streamlit Secrets를 확인해주세요!")
-    else:
-        with st.spinner("💘 AI가 우리만을 위한 최적의 코스를 분석 중..."):
-            result = get_ai_recommendation(mood, weather)
-            
-            res_dict = {}
-            for line in result.split('\n'):
-                if ':' in line:
-                    key, val = line.split(':', 1)
-                    res_dict[key.strip()] = val.strip()
-            
-            st.balloons()
-            
-            # 카드 레이아웃 출력
-            st.markdown(f"""
-                <div class="date-card">
-                    <h3 style="color: #ff4b4b; margin-top: 0;">📍 AI 큐피드의 추천</h3>
-                    <p style="font-size: 20px; font-weight: bold;">{res_dict.get('장소', '알 수 없는 장소')}</p>
-                    <hr>
-                    <p>🍴 <b>오늘의 메뉴:</b> {res_dict.get('메뉴', '현장에서 함께 골라보세요')}</p>
-                    <p>💡 <b>커플/부부를 위한 꿀팁:</b> {res_dict.get('꿀팁', '서로의 손을 따뜻하게 잡아주세요')}</p>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # 공유 메시지
-            share_text = f"💘 우리 오늘 데이트 여기 어때?\n\n📍 장소: {res_dict.get('장소')}\n🍴 메뉴: {res_dict.get('메뉴')}\n\n이따 여기서 만나! 사랑해 🏹"
-            st.code(share_text, language="text")
-            
-            # 네이버 지도 버튼
-            search_url = f"https://map.naver.com/v5/search/{res_dict.get('장소', '').replace(' ', '')}"
-            st.link_button("🗺️ 네이버 지도에서 위치 확인하기", search_url)
+# 7. 실행 로직 (상태 관리 및 조건부 버튼 노출)
 
+# 결과 생성 여부와 대안 요청 여부를 추적하기 위한 세션 상태 초기화
+if 'result_generated' not in st.session_state:
+    st.session_state.result_generated = False
+if 'current_result' not in st.session_state:
+    st.session_state.current_result = None
+if 'is_retrying' not in st.session_state:
+    st.session_state.is_retrying = False
+
+# 메인 실행 버튼
+submit = st.button("AI 큐피드 화살 쏘기! 🏹", use_container_width=True)
+
+# '화살 쏘기'를 눌렀거나, '다른 대안 보기'를 눌러서 리런된 경우 실행
+if submit or st.session_state.is_retrying:
+    with st.spinner(f"💘 {occasion}에 딱 맞는 새로운 장소를 탐색 중..."):
+        # AI 추천 가져오기
+        raw_result = get_ai_recommendation(mood, weather, occasion)
+        
+        # 결과 파싱
+        res_dict = {}
+        for line in raw_result.split('\n'):
+            if ':' in line:
+                key, val = line.split(':', 1)
+                res_dict[key.strip()] = val.strip()
+        
+        # 상태 업데이트
+        st.session_state.current_result = res_dict
+        st.session_state.result_generated = True
+        st.session_state.is_retrying = False # 실행 완료 후 초기화
+        st.balloons()
+
+# 결과가 있을 때만 화면에 출력
+if st.session_state.result_generated and st.session_state.current_result:
+    res_dict = st.session_state.current_result
+    
+    st.markdown(f"""
+        <div class="date-card">
+            <h3 style="color: #ff4b4b; margin-top: 0; font-size: 1.2rem;">✨ AI 큐피드의 {occasion} 추천</h3>
+            <p style="font-size: 22px; font-weight: bold; margin-bottom: 10px;">📍 {res_dict.get('장소', '알 수 없는 곳')}</p>
+            <hr style="border: 0.5px solid #eee;">
+            <p style="margin: 10px 0;">🍴 <b>추천 메뉴:</b> {res_dict.get('메뉴', '시그니처 메뉴')}</p>
+            <p style="margin: 10px 0; line-height: 1.5;">💡 <b>오늘의 팁:</b> {res_dict.get('꿀팁', '즐거운 시간 보내세요!')}</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # 지도 버튼
+    place_name = res_dict.get('장소', '').replace(' ', '')
+    st.link_button("🗺️ 네이버 지도에서 위치 확인하기", f"https://map.naver.com/v5/search/{place_name}")
+    
+    st.write("") 
+    
+    # 다른 대안 보기 버튼
+    if st.button("마음에 안 드시나요? 다른 대안 보기 🔄", use_container_width=True):
+        st.session_state.is_retrying = True # "나 지금 다시 할 거야"라고 표시
+        st.rerun() # 앱을 다시 실행시켜서 위쪽의 'if' 문으로 보냄
+
+# 하단 푸터
 st.divider()
-st.caption("© 2026 Stupid Cupid - For All Lovely Couples")
+st.caption(f"© 2026 Stupid Cupid | Today's Choice: {occasion}")
