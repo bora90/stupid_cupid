@@ -77,4 +77,9 @@ if st.button("큐피드 화살 쏘기! 🏹"):
         st.markdown(f"""
             <div class="date-card">
                 <h3 style="color: #ff4b4b; margin-top: 0;">📍 오늘의 추천 장소</h3>
-                <p style="font-size
+                <p style="font-size: 20px; font-weight: bold; color: #333;">{selected['place']}</p>
+                <hr style="border: 0.5px solid #eee;">
+                <p>🍴 <b>추천 메뉴:</b> {selected['menu']}</p>
+                <p>💡 <b>7년 차 커플 꿀팁:</b> {selected['tip']}</p>
+            </div>
+        """, unsafe_allow_html=True)
