@@ -1,85 +1,104 @@
 import streamlit as st
+from openai import OpenAI
+import os
 import time
 import random
+from dotenv import load_dotenv
 
-# 1. 페이지 설정 (브라우저 탭 이름과 아이콘)
+# 1. 환경 변수 로드
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# 2. 페이지 설정
 st.set_page_config(page_title="Stupid Cupid", page_icon="🏹", layout="centered")
 
-# 2. 스타일링 (CSS를 활용한 핑크 테마와 카드 디자인)
+# 3. 스타일링 (CSS)
 st.markdown("""
     <style>
     .main { background-color: #fff5f5; }
     .stButton>button { 
-        width: 100%; 
-        border-radius: 25px; 
-        background-color: #ff4b4b; 
-        color: white; 
-        font-weight: bold;
-        border: none;
-        height: 3em;
+        width: 100%; border-radius: 25px; background-color: #ff4b4b; 
+        color: white; font-weight: bold; border: none; height: 3.5em;
     }
     .date-card {
-        background-color: white; 
-        padding: 20px; 
-        border-radius: 15px; 
-        border-left: 8px solid #ff4b4b; 
-        box-shadow: 2px 2px 12px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
+        background-color: white; padding: 25px; border-radius: 20px; 
+        border-left: 10px solid #ff4b4b; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. 헤더 섹션
-st.title("💘 Stupid Cupid")
-st.subheader("7년 차 커플을 위한 설렘 제조기")
-st.write("오늘 우리, 어디서 어떤 추억을 쌓을까요?")
-
-# 4. 데이터베이스 (나중에 OpenAI로 대체할 부분입니다!)
-DATE_DATABASE = {
-    "활동적인 게 좋아 🏃‍♀️": [
-        {"place": "성수동 '리얼샷' 사격카페", "menu": "근처 수제버거 맛집 '제스티살룬'", "tip": "사격 내기해서 진 사람이 저녁 사기!"},
-        {"place": "한강 '이촌지구' 자전거 라이딩", "menu": "편의점 즉석 라면과 캔맥주", "tip": "해 질 녘 노을을 배경으로 서로 뒷모습 찍어주기"}
-    ],
-    "조용히 쉬고 싶어 ☕": [
-        {"place": "한남동 '현대카드 뮤직라이브러리'", "menu": "근처 '나리의 집' 냉동삼겹살", "tip": "서로에게 어울리는 LP 한 장 골라 들어보기"},
-        {"place": "종로 '더숲 초소책방'", "menu": "갓 구운 소금빵과 커피", "tip": "인왕산 뷰를 보며 올해 가고 싶은 여행지 이야기하기"}
-    ],
-    "맛있는 게 최고 🍕": [
-        {"place": "압구정 '도산분식'", "menu": "가츠산도와 마라떡볶이", "tip": "대기가 길 수 있으니 '캐치테이블' 미리 확인하기!"},
-        {"place": "망원동 '소금집 델리'", "menu": "잠봉뵈르 샌드위치", "tip": "망원시장 구경하며 간식거리 쇼핑하는 재미도 놓치지 마세요"}
-    ]
-}
+# 4. 헤더 (범용적인 표현으로 수정)
+st.title("🏹 Stupid Cupid")
+st.subheader("모든 커플과 부부를 위한 AI 데이트 메이커")
+st.write("오늘 우리, 어떤 소중한 추억을 쌓아볼까요?")
 
 # 5. 입력 섹션
 st.divider()
 col1, col2 = st.columns(2)
-
 with col1:
-    mood = st.selectbox("🎭 지금 우리 기분은?", list(DATE_DATABASE.keys()))
-
+    mood = st.selectbox("🎭 지금 우리 기분은?", ["활동적인 게 좋아 🏃‍♀️", "조용히 쉬고 싶어 ☕", "맛있는 게 최고 🍕", "새로운 경험이 필요해 ✨"])
 with col2:
-    weather = st.selectbox("☁️ 오늘 날씨는?", ["맑음", "비/눈", "흐림", "적당함"])
+    weather = st.selectbox("☁️ 오늘 날씨는?", ["맑음☀️", "비/눈🌧️", "흐림☁️", "적당함🌤️"])
+
+# 6. AI 추천 함수 (프롬프트 수정)
+def get_ai_recommendation(mood, weather):
+    prompt = f"""
+    우리는 서로를 아끼는 커플 또는 부부야. 평범한 일상 속에서 특별한 설렘이 필요해.
+    오늘 우리의 기분은 '{mood}'이고, 날씨는 '{weather}'이야.
+    서울 내에서 갈 만한 감각적이고 사랑스러운 데이트 코스를 하나만 추천해줘.
+    
+    답변은 반드시 아래 형식을 정확히 지켜줘 (텍스트만):
+    장소: [이름]
+    메뉴: [음식이나 음료]
+    꿀팁: [커플이나 부부의 사이를 더 가깝게 만들어줄 센스있는 조언 한 줄]
+    """
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "system", "content": "너는 다정한 연애 및 부부 관계 컨설턴트야."},
+                      {"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"에러 발생: {e}"
+
+# 7. 실행 로직
+if st.button("AI 큐피드 화살 쏘기! 🏹"):
+    if not os.getenv("OPENAI_API_KEY"):
+        st.error("API 키가 설정되지 않았습니다. .env 파일 또는 Streamlit Secrets를 확인해주세요!")
+    else:
+        with st.spinner("💘 AI가 우리만을 위한 최적의 코스를 분석 중..."):
+            result = get_ai_recommendation(mood, weather)
+            
+            res_dict = {}
+            for line in result.split('\n'):
+                if ':' in line:
+                    key, val = line.split(':', 1)
+                    res_dict[key.strip()] = val.strip()
+            
+            st.balloons()
+            
+            # 카드 레이아웃 출력
+            st.markdown(f"""
+                <div class="date-card">
+                    <h3 style="color: #ff4b4b; margin-top: 0;">📍 AI 큐피드의 추천</h3>
+                    <p style="font-size: 20px; font-weight: bold;">{res_dict.get('장소', '알 수 없는 장소')}</p>
+                    <hr>
+                    <p>🍴 <b>오늘의 메뉴:</b> {res_dict.get('메뉴', '현장에서 함께 골라보세요')}</p>
+                    <p>💡 <b>커플/부부를 위한 꿀팁:</b> {res_dict.get('꿀팁', '서로의 손을 따뜻하게 잡아주세요')}</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # 공유 메시지
+            share_text = f"💘 우리 오늘 데이트 여기 어때?\n\n📍 장소: {res_dict.get('장소')}\n🍴 메뉴: {res_dict.get('메뉴')}\n\n이따 여기서 만나! 사랑해 🏹"
+            st.code(share_text, language="text")
+            
+            # 네이버 지도 버튼
+            search_url = f"https://map.naver.com/v5/search/{res_dict.get('장소', '').replace(' ', '')}"
+            st.link_button("🗺️ 네이버 지도에서 위치 확인하기", search_url)
 
 st.divider()
-
-# 6. 실행 로직
-if st.button("큐피드 화살 쏘기! 🏹"):
-    with st.spinner("💘 7년의 취향을 분석해서 최적의 코스를 찾는 중..."):
-        time.sleep(1.2) # AI가 생각하는 척!
-        
-        # 선택된 기분에 맞는 리스트에서 무작위 선택
-        options = DATE_DATABASE.get(mood)
-        selected = random.choice(options)
-        
-        st.balloons() # 축하 풍선
-        
-        # 결과 카드 출력
-        st.markdown(f"""
-            <div class="date-card">
-                <h3 style="color: #ff4b4b; margin-top: 0;">📍 오늘의 추천 장소</h3>
-                <p style="font-size: 20px; font-weight: bold; color: #333;">{selected['place']}</p>
-                <hr style="border: 0.5px solid #eee;">
-                <p>🍴 <b>추천 메뉴:</b> {selected['menu']}</p>
-                <p>💡 <b>7년 차 커플 꿀팁:</b> {selected['tip']}</p>
-            </div>
-        """, unsafe_allow_html=True)
+st.caption("© 2026 Stupid Cupid - For All Lovely Couples")
