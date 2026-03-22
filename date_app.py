@@ -1,13 +1,32 @@
 import streamlit as st
 from openai import OpenAI
 import os
-import time
-import random
 from dotenv import load_dotenv
 
-# 1. 환경 변수 로드
+# 1. 로컬 .env 파일 로드
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# 2. API 키 결정 (에러 없이 안전하게 가져오기)
+api_key = None
+
+# 먼저 로컬 환경변수나 .env에서 찾아봅니다.
+if os.getenv("OPENAI_API_KEY"):
+    api_key = os.getenv("OPENAI_API_KEY")
+# 로컬에 없다면(배포 환경이라면) 스트림릿 금고(secrets)를 확인합니다.
+else:
+    try:
+        if "OPENAI_API_KEY" in st.secrets:
+            api_key = st.secrets["OPENAI_API_KEY"]
+    except:
+        # 금고 파일 자체가 없는 로컬 환경에서도 에러 없이 넘어가게 합니다.
+        pass
+
+# 3. 키가 아예 없는 경우에만 경고를 띄웁니다.
+if not api_key:
+    st.error("🔑 API 키를 찾을 수 없습니다! .env 파일이나 Streamlit Secrets를 확인해주세요.")
+    st.stop()
+
+client = OpenAI(api_key=api_key)
 
 # 2. 페이지 설정
 st.set_page_config(page_title="Stupid Cupid", page_icon="🏹", layout="centered")
